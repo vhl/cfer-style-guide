@@ -308,3 +308,26 @@
   # good
   require_opts %i(desired_capacity min_size max_size launch_config vpc_zone_ids)
   ``` 
+
+## Exports
+
+* <a name="limit-exports"></a>
+  Values should not be exported using the output method unless it is absolutely necessary for some other stack to import them. Since declaring an export means that some stack may have already started depending on it, outputs should rarely be renamed or removed. If there is a need to output a value for debug purposes (e.g. the private ip of an instance so you can shell into it), prefix the output name with Debug.
+  <sup>[[link]](#limit-exports)</sup>
+  
+  ```Ruby
+  output(:DebugInstanceIp, Fn.get_att(:Instance, 'PrivateIp')
+  ```
+  
+* <a name="immutable-output-names"></a>
+  When calling the `output` method, the first argument should be a symbol or a literal string with no interpolation, and not a variable or a string using variable interpolation. Basically, it should be as immutable as possible, as there are probably other stacks that expect to be able to look up or import values using this identifier.
+  <sup>[[link]](#immutable-output-names)</sup>
+  
+  ```Ruby
+  # bad
+  output("Prefix#{some_var}Id", some_value)
+  
+  # good
+  output(:SolidUnchangingName, some_value)
+  ```
+  
