@@ -1,9 +1,20 @@
-## Template Structure
-
 > Nearly everybody is convinced that every style but their own is
 > ugly and unreadable. Leave out the "but their own" and they're
 > probably right... <br>
 > -- Jerry Coffin (on indentation)
+
+## Table of Contents
+
+* [Template Structure](#template-structure)
+* [File Names](#file-names)
+* [Naming](#naming)
+* [Resources](#resources)
+* [Parameters](#parameters)
+* [Argument Lists](#argument-lists)
+* [Exports](#exports)
+* [Misc](#misc)
+
+## Template Structure
 
 * <a name="consistent-template"></a>
   Use a consistent structure in your template definitions.
@@ -146,6 +157,7 @@
   ```
 
 ## Resources
+
 * <a name="assign-meta-attributes-within-block"></a>
  Don't pass CreationPolicy, DependsOn, MetaData, and UpdatePolicy as optional hash arguments to the resource method. Instead, specify them within the resource block, after all other attributes.
   <sup>[[link](#assign-meta-attributes-within-block)]</sup>
@@ -174,6 +186,7 @@
   ```
   
 ## Parameters
+
 * <a name="dont-fn-ref-params"></a>
   Even though this works when evaluated within CloudFormation, don't use Fn.ref with parameters within your templates.
   <sup>[[link](#dont-fn-ref-params)]</sup>
@@ -239,6 +252,7 @@
 * <a name="alphabetize-everything"></a>
   Alphabetize arguments to include_template(), attributes within a resource definition, or hash keys within a hash argument to a method, especially when the hash spans multiple lines. Basically, if you've got a list of things, alphabetize it. It makes it much easier to detect the presence or absence of an element within the list, and to compare different lists.
   <sup>[[link]](#alphabetize-everything)</sup>
+  
   ```Ruby
   # hash arguments
   # bad
@@ -316,7 +330,7 @@
   <sup>[[link]](#limit-exports)</sup>
   
   ```Ruby
-  output(:DebugInstanceIp, Fn.get_att(:Instance, 'PrivateIp')
+  output(:DebugInstanceIp, Fn.get_att(:Instance, 'PrivateIp'))
   ```
   
 * <a name="immutable-output-names"></a>
@@ -330,4 +344,9 @@
   # good
   output(:SolidUnchangingName, some_value)
   ```
-  
+ 
+ ## Misc
+ 
+ * Stack name should never be used to form tags, resource names, or descriptions.  This can cause false positives when previewing changesets, because previews generate a random stackname.
+ 
+ * Security group descriptions should be changed infrequently.  They should either be left blank (reading the rules should make it clear enough what the group does. If not, it might be too complex.), or very briefly describe their purpose and not what ports they grant or to which IPs. This is because a change to description attribute requires REPLACEMENT, and if there are other stacks importing or looking up the security group id, they will get screwed up.
