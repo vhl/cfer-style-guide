@@ -1,4 +1,4 @@
-## Template Layout
+## Template Structure
 
 > Nearly everybody is convinced that every style but their own is
 > ugly and unreadable. Leave out the "but their own" and they're
@@ -234,3 +234,77 @@
   parameter :DesiredSize, default: parameters[:MinSize]
   parameter :MaxSize, default: (parameters[:DesiredSize].to_i + parameters[:BatchSize].to_i).to_s
   ```  
+## Argument Lists
+
+* <a name="alphabetize-everything"></a>
+  Alphabetize arguments to include_template(), attributes within a resource definition, or hash keys within a hash argument to a method, especially when the hash spans multiple lines. Basically, if you've got a list of things, alphabetize it. It makes it much easier to detect the presence or absence of an element within the list, and to compare different lists.
+  <sup>[[link]](#alphabetize-everything)</sup>
+  ```Ruby
+  # hash arguments
+  # bad
+  create_auto_scale_group(
+    resource_name,
+    load_balancer_names: [Fn.ref(lb_resource_name)],
+    vpc_zone_ids: [subnet_1, subnet_2]
+    creation_policy: creation_policy(parameters[:MinSize], 'PT10M'),
+    desired_capacity: parameters[:DesiredSize],
+    launch_config: Fn.ref(launch_config_name),
+    min_size: parameters[:MinSize],
+    max_size: parameters[:MaxSize],
+    tags: build_tags(resource_name, 'web'),
+  )
+
+  # good
+  create_auto_scale_group(
+    resource_name,
+    creation_policy: creation_policy(parameters[:MinSize], 'PT10M'),
+    desired_capacity: parameters[:DesiredSize],
+    launch_config: Fn.ref(launch_config_name),
+    load_balancer_names: [Fn.ref(lb_resource_name)],
+    max_size: parameters[:MaxSize],
+    min_size: parameters[:MinSize],
+    tags: build_tags(resource_name, 'web'),
+    vpc_zone_ids: [subnet_1, subnet_2]
+  )
+  
+  # resource definitions
+  # bad
+  def create_auto_scale_group(resource_name, opts = {})
+    resource resource_name, 'AWS::AutoScaling::AutoScalingGroup' do
+      max_size opts[:max_size]
+      min_size opts[:min_size]
+      desired_capacity opts[:desired_capacity]
+
+      v_p_c_zone_identifier opts[:vpc_zone_ids]
+
+      load_balancer_names opts[:load_balancer_names] if opts.key?(:load_balancer_names)
+      launch_configuration_name opts[:launch_config]
+
+      self[:CreationPolicy] = opts[:creation_policy] if opts.key?(:creation_policy)
+
+      tags opts[:tags] || []
+    end
+  end
+
+  # good
+  def create_auto_scale_group(resource_name, opts = {})
+    resource resource_name, 'AWS::AutoScaling::AutoScalingGroup' do
+      desired_capacity opts[:desired_capacity]
+      launch_configuration_name opts[:launch_config]
+      load_balancer_names opts[:load_balancer_names] if opts.key?(:load_balancer_names)
+      max_size opts[:max_size]
+      min_size opts[:min_size]
+      tags opts[:tags] || []
+      v_p_c_zone_identifier opts[:vpc_zone_ids]
+
+      self[:CreationPolicy] = opts[:creation_policy] if opts.key?(:creation_policy)
+    end
+  end
+
+  # Lists specified with %w() or %i()
+  # bad
+  require_opts %i(vpc_zone_ids max_size min_size desired_capacity launch_config)
+
+  # good
+  require_opts %i(desired_capacity min_size max_size launch_config vpc_zone_ids)
+  ``` 
