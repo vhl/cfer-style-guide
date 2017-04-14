@@ -48,11 +48,11 @@
   end
 
   # resource definitions, ordered by dependency
-  resource :Parent, 'Aws::Type' do
+  resource :Parent, 'AWS::SomeType' do
     # ...
   end
 
-  resource :Child, 'Aws::Type' do
+  resource :Child, 'AWS::SomeType' do
     # ...
     self[:DependsOn] = [:Parent]
   end
@@ -114,14 +114,14 @@
   
   ```Ruby
   # bad
-  resource 'my-resource', 'Aws::SomeType'
+  resource 'my-resource', 'AWS::SomeType'
   Fn.ref("my-resource")
   Fn.get_att('my-resource', 'PrivateIp')
   output('my-resource', resource_id)
   lookup_output(stack_name, 'other-resource-id')
   
   # good
-  resource :MyResource, 'Aws::SomeType'
+  resource :MyResource, 'AWS::SomeType'
   Fn.ref(:MyResource)
   Fn.get_att(:MyResource, :PrivateIp)
   output(:MyResource, resource_id)
@@ -144,3 +144,93 @@
     output("Instance#{index}", :PrivateIp)
   end
   ```
+
+## Resources
+* <a name="assign-meta-attributes-within-block"></a>
+ Don't pass CreationPolicy, DependsOn, MetaData, and UpdatePolicy as optional hash arguments to the resource method. Instead, specify them within the resource block, after all other attributes.
+  <sup>[[link](#assign-meta-attributes-within-block)]</sup>
+
+  ```Ruby
+  # bad
+  resource :MyResourceName, 'AWS::AutoScaling::AutoScalingGroup', 
+    :DependsOn => [:Dependency1, :Dependency2] do
+    resource_attr :one
+    resource_attr :two
+  end
+
+  # worse
+  resource :MyResourceName, 'AWS::AutoScaling::AutoScalingGroup', :DependsOn => [:Dependency1, :Dependency2] do
+    resource_attr :one
+    resource_attr :two
+  end
+
+  # good
+  resource :MyResourceName, 'AWS::AutoScaling::AutoScalingGroup' do
+    resource_attr :one
+    resource_attr :two
+
+    self[:DependsOn] = [:Dependency1, :Dependency2]
+  end
+  ```
+  
+## Parameters
+* <a name="dont-fn-ref-params"></a>
+  Even though this works when evaluated within CloudFormation, don't use Fn.ref with parameters within your templates.
+  <sup>[[link](#dont-fn-ref-params)]</sup>
+  
+  ```Ruby
+  # given
+  parameter :MyParam, default: 'some_value'
+
+  # bad
+  resource :MyResourceName, 'AWS::SomeThing' do
+    some_attr Fn.ref(:MyParam)
+  end
+
+  # good
+  resource :MyResourceName, 'AWS::SomeThing' do
+    some_attr parameters[:MyParam]
+  end
+  ```
+* <a name="prefer-description-to-comments"></a>
+  Use the optional :description key instead of ruby comments when annotating parameters. The advantage to using description is that it is displayed within CloudFormation.
+  <sup>[[link]](#prefer-description-to-comments)]</sup>
+  
+  ```Ruby
+  # bad
+  # Specify a Ubuntu 16.04 AMI in the desired region.
+  parameter :BaseAmi, default: 'ami-123456'
+  parameter :MaxSize, default: 2 # Should be higher than DesiredSize
+
+  # good
+  parameter :BaseAmi, default: 'ami-123456',
+                      description: 'Specify a Ubuntu 16.04 AMI in the desired region.'
+  parameter :MaxSize, default: 2, description: 'Should be higher than DesiredSize'
+  ```
+
+* <a name="alphabetize-params"></a>
+  Declare parameters in alphabetical order.
+  <sup>[[link]](#alphabetize-params)</sup>
+  
+  ```Ruby
+  # bad
+  parameter :InstanceType, default: 't2.medium'
+  parameter :LiveAmiImage, default: 'ami-12456'
+  parameter :MinSize, default: '2'
+  parameter :MaxSize, default: '6'
+
+  # good
+  parameter :InstanceType, default: 't2.medium'
+  parameter :LiveAmiImage, default: 'ami-12456'
+  parameter :MaxSize, default: '6'
+  parameter :MinSize, default: '2'
+  ```
+
+  Exception: if the default value for one parameter references another, the referenced parameter must be declared first.
+
+  ```Ruby
+  parameter :BatchSize, default: '2'
+  parameter :MinSize, default: '2'
+  parameter :DesiredSize, default: parameters[:MinSize]
+  parameter :MaxSize, default: (parameters[:DesiredSize].to_i + parameters[:BatchSize].to_i).to_s
+  ```  
